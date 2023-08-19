@@ -1,23 +1,26 @@
-﻿namespace Project_1
+﻿namespace F1_Aggregator
 {
     internal static class UserInterface
     {
+        private static readonly TimeZoneInfo TimeZone = TimeZoneInfo.Local;
         private static readonly ConsoleColor TextColor = ConsoleColor.White;
         private static readonly ConsoleColor EmphasisColor = ConsoleColor.Red;
-        private static readonly TimeZoneInfo TimeZone = TimeZoneInfo.Local;
-        private static string[] MenuItems => Program.Options.Keys.ToArray();
-        private static int MenuWidth => 3 + MenuItems.Max(str => str.Length);
 
-        internal static void EmphasizeText()
+        // menu items and their associated WebScraper methods
+        private static readonly Dictionary<string, Action<WebScraper>?> MenuItems = new()
         {
-            Console.ForegroundColor = EmphasisColor;
-        }
+            ["View the next race weekend's schedule"] = (scraper) => scraper.GetRaceSchedule(),
+            ["View the remaining season schedule"] = (scraper) => scraper.GetSeasonSchedule(),
+            ["View the most recent race winner"] = (scraper) => scraper.GetRaceWinner(),
+            ["View Driver Standings"] = (scraper) => scraper.GetDriverStandings(),
+            ["View Constructor Standings"] = (scraper) => scraper.GetConstructorStandings(),
+            ["Clear the console window"] = (scraper) => Console.Clear(),
+            ["Quit"] = (scraper) => { }
+        };
+        private static readonly string[] MenuOptions = MenuItems.Keys.ToArray();
+        private static readonly int MenuWidth = 3 + MenuOptions.Max(str => str.Length);
 
-        internal static void DeEmphasizeText()
-        {
-            Console.ForegroundColor = TextColor;
-        }
-
+        // greet the user
         internal static void ShowWelcome()
         {
             string message = "Good " + DateTime.Now.Hour switch
@@ -32,28 +35,49 @@
                 $"{(TimeZone.IsDaylightSavingTime(DateTime.Now) ? TimeZone.DaylightName : TimeZone.StandardName)}.");
         }
 
+        // print the menu
         internal static void ShowMenu()
         {
             Console.WriteLine("\nMenu");
-            Console.WriteLine(new String('-', MenuWidth));
-            for (int i = 0; i < MenuItems.Length; i++)
-                Console.WriteLine($"{i + 1}. {MenuItems[i]}");
+            Console.WriteLine(new string('-', MenuWidth));
+            for (int i = 0; i < MenuOptions.Length; i++)
+                Console.WriteLine($"{i + 1}. {MenuOptions[i]}");
             Console.WriteLine();
         }
 
-        internal static string SelectMenuItem()
+        // allow the user to select a menu item; execute the related function
+        // return true/false to repeat/end the program
+        internal static bool SelectMenuItem(WebScraper scraper)
         {
             int selection;
             do
             {
-                Console.Write($"Select one of the menu options (1-{MenuItems.Length}): ");
+                Console.Write($"Select one of the menu options (1-{MenuItems.Count}): ");
                 _ = int.TryParse(Console.ReadLine(), out selection);
             }
-            while (selection < 1 || MenuItems.Length + 1 <= selection);
+            while (selection < 1 || MenuItems.Count + 1 <= selection);
 
-            string menuItem = MenuItems[selection - 1];
-            Console.WriteLine($"{menuItem}\n");
-            return menuItem;
+            string option = MenuOptions[selection - 1];
+            Console.WriteLine($"{option}\n");
+            if (option == MenuOptions.Last())
+                return false;
+
+            EmphasizeText();
+            MenuItems[option]!(scraper);
+            DeEmphasizeText();
+            return true;
+        }
+
+        // make the output a little more obvious
+        private static void EmphasizeText()
+        {
+            Console.ForegroundColor = EmphasisColor;
+        }
+
+        // back to normal
+        private static void DeEmphasizeText()
+        {
+            Console.ForegroundColor = TextColor;
         }
     }
 }
