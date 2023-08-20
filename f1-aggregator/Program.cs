@@ -6,14 +6,12 @@
         {
             UserInterface.ShowWelcome();
             WebScraper scraper = new();
-
             bool runProgram = true;
             while (runProgram)
             {
                 UserInterface.ShowMenu();
                 runProgram = UserInterface.SelectMenuItem(scraper);
             }
-
             Console.WriteLine("Goodbye!");
         }
     }

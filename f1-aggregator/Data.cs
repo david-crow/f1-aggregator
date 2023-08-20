@@ -1,20 +1,16 @@
 ﻿namespace F1_Aggregator
 {
-    public class Data
+    public class MultiData
     {
-        public DateTime Expiration { get; set; }
-        public string Name { get; set; }
-        public List<string> Labels { get; set; }
-        public List<int> Widths { get; set; }
-        public List<List<string>> Info { get; set; }
+        public DateTime Expiration { get; set; } = default;
+        public Dictionary<string, Data> DataCollection { get; set; } = new();
 
-        public Data()
+        public class Data
         {
-            Expiration = DateTime.MinValue;
-            Name = string.Empty;
-            Labels = new();
-            Widths = new();
-            Info = new();
+            public string Output { get; set; } = string.Empty;
+            public List<List<string>> Info { get; set; } = new();
+            public List<string>? Labels { get; set; } = default;
+            public List<int>? Widths { get; set; } = default;
         }
     }
 }

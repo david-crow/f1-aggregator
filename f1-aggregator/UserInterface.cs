@@ -2,18 +2,18 @@
 {
     internal static class UserInterface
     {
-        private static readonly TimeZoneInfo TimeZone = TimeZoneInfo.Local;
-        private static readonly ConsoleColor TextColor = ConsoleColor.White;
-        private static readonly ConsoleColor EmphasisColor = ConsoleColor.Red;
+        private static readonly TimeZoneInfo TIME_ZONE = TimeZoneInfo.Local;
+        private static readonly ConsoleColor TEXT_COLOR = ConsoleColor.White;
+        private static readonly ConsoleColor EMPHASIS_COLOR = ConsoleColor.Red;
 
         // menu items and their associated WebScraper methods
         private static readonly Dictionary<string, Action<WebScraper>?> MenuItems = new()
         {
-            ["View the next race weekend's schedule"] = (scraper) => scraper.GetRaceSchedule(),
-            ["View the remaining season schedule"] = (scraper) => scraper.GetSeasonSchedule(),
-            ["View the most recent race winner"] = (scraper) => scraper.GetRaceWinner(),
-            ["View Driver Standings"] = (scraper) => scraper.GetDriverStandings(),
-            ["View Constructor Standings"] = (scraper) => scraper.GetConstructorStandings(),
+            ["View the next race weekend's schedule"] = (scraper) => scraper.PrintRaceSchedule(),
+            ["View the remaining season schedule"] = (scraper) => scraper.PrintSeasonSchedule(),
+            ["View the most recent race winner"] = (scraper) => scraper.PrintRaceResults(),
+            ["View Driver Standings"] = (scraper) => scraper.PrintDriverStandings(),
+            ["View Constructor Standings"] = (scraper) => scraper.PrintConstructorStandings(),
             ["Clear the console window"] = (scraper) => Console.Clear(),
             ["Quit"] = (scraper) => { }
         };
@@ -32,7 +32,7 @@
 
             // the system timezone affects the race/season schedules, so the user can see here whether we actually have it right
             Console.WriteLine($"{message}! It is {DateTime.Now:h:mm tt}. Your time zone is " +
-                $"{(TimeZone.IsDaylightSavingTime(DateTime.Now) ? TimeZone.DaylightName : TimeZone.StandardName)}.");
+                $"{(TIME_ZONE.IsDaylightSavingTime(DateTime.Now) ? TIME_ZONE.DaylightName : TIME_ZONE.StandardName)}.");
         }
 
         // print the menu
@@ -71,13 +71,13 @@
         // make the output a little more obvious
         private static void EmphasizeText()
         {
-            Console.ForegroundColor = EmphasisColor;
+            Console.ForegroundColor = EMPHASIS_COLOR;
         }
 
         // back to normal
         private static void DeEmphasizeText()
         {
-            Console.ForegroundColor = TextColor;
+            Console.ForegroundColor = TEXT_COLOR;
         }
     }
 }
