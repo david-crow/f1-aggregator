@@ -1,23 +1,26 @@
-﻿namespace F1_Aggregator
+﻿using System.Net.Sockets;
+using System.Text;
+
+namespace F1_Aggregator
 {
     internal static class UserInterface
     {
         private static readonly TimeZoneInfo TIME_ZONE = TimeZoneInfo.Local;
         private static readonly ConsoleColor TEXT_COLOR = ConsoleColor.White;
         private static readonly ConsoleColor EMPHASIS_COLOR = ConsoleColor.Red;
+        private static readonly string CLEAR = "Clear the console window";
 
-        // menu items and their associated WebScraper methods
-        private static readonly Dictionary<string, Action<WebScraper>?> MenuItems = new()
+        // all WebScraper options and UI options
+        private static readonly List<string> MenuOptions = new()
         {
-            ["View the next race weekend's schedule"] = (scraper) => scraper.PrintRaceSchedule(),
-            ["View the remaining season schedule"] = (scraper) => scraper.PrintSeasonSchedule(),
-            ["View the most recent race winner"] = (scraper) => scraper.PrintRaceResults(),
-            ["View Driver Standings"] = (scraper) => scraper.PrintDriverStandings(),
-            ["View Constructor Standings"] = (scraper) => scraper.PrintConstructorStandings(),
-            ["Clear the console window"] = (scraper) => Console.Clear(),
-            ["Quit"] = (scraper) => { }
+            "View the next race weekend's schedule",
+            "View the remaining season schedule",
+            "View the most recent race winner",
+            "View Driver Standings",
+            "View Constructor Standings",
+            CLEAR,
+            "Quit"
         };
-        private static readonly string[] MenuOptions = MenuItems.Keys.ToArray();
         private static readonly int MenuWidth = 3 + MenuOptions.Max(str => str.Length);
 
         // greet the user
@@ -32,40 +35,54 @@
 
             // the system timezone affects the race/season schedules, so the user can see here whether we actually have it right
             Console.WriteLine($"{message}! It is {DateTime.Now:h:mm tt}. Your time zone is " +
-                $"{(TIME_ZONE.IsDaylightSavingTime(DateTime.Now) ? TIME_ZONE.DaylightName : TIME_ZONE.StandardName)}.");
+                $"{(TIME_ZONE.IsDaylightSavingTime(DateTime.Now) ? TIME_ZONE.DaylightName : TIME_ZONE.StandardName)}.\n");
         }
 
         // print the menu
         internal static void ShowMenu()
         {
-            Console.WriteLine("\nMenu");
+            Console.WriteLine("Menu");
             Console.WriteLine(new string('-', MenuWidth));
-            for (int i = 0; i < MenuOptions.Length; i++)
+            for (int i = 0; i < MenuOptions.Count; i++)
                 Console.WriteLine($"{i + 1}. {MenuOptions[i]}");
             Console.WriteLine();
         }
 
         // allow the user to select a menu item; execute the related function
         // return true/false to repeat/end the program
-        internal static bool SelectMenuItem(WebScraper scraper)
+        internal static bool SelectMenuItem(NetworkStream stream)
         {
             int selection;
             do
             {
-                Console.Write($"Select one of the menu options (1-{MenuItems.Count}): ");
+                Console.Write($"Select one of the menu options (1-{MenuOptions.Count}): ");
                 _ = int.TryParse(Console.ReadLine(), out selection);
             }
-            while (selection < 1 || MenuItems.Count + 1 <= selection);
+            while (selection < 1 || MenuOptions.Count + 1 <= selection);
 
             string option = MenuOptions[selection - 1];
             Console.WriteLine($"{option}\n");
             if (option == MenuOptions.Last())
                 return false;
-
-            EmphasizeText();
-            MenuItems[option]!(scraper);
-            DeEmphasizeText();
+            else if (option == CLEAR)
+                Console.Clear();
+            else
+            {
+                EmphasizeText();
+                Console.WriteLine(GetServerResponse(stream, option) + "\n");
+                DeEmphasizeText();
+            }
             return true;
+        }
+
+        // send the menu option to the server; process and return the server's response
+        private static string GetServerResponse(NetworkStream stream, string option)
+        {
+            byte[] request = Encoding.ASCII.GetBytes(option);
+            stream.Write(request, 0, request.Length);
+            byte[] response = new byte[2048];
+            int bytes = stream.Read(response, 0, response.Length);
+            return Encoding.ASCII.GetString(response, 0, bytes);
         }
 
         // make the output a little more obvious

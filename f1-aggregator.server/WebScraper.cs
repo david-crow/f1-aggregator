@@ -5,17 +5,17 @@ using System.Text.RegularExpressions;
 
 namespace F1_Aggregator
 {
-    internal partial class WebScraper
+    public partial class WebScraper
     {
         // paths for saving/scraping data
-        private static readonly string DATA_FILE = "data/Data.json";
+        private static readonly string DATA_FILE = "/Users/davidcrow/Developer/f1-aggregator/f1-aggregator.server/Data.json";
         private static readonly string SCHEDULE_URL = "https://f1calendar.com";
         private static readonly string RESULTS_URL = "https://www.formula1.com/en/results.html/2023/races.html";
         private static readonly string DRIVER_STANDINGS_URL = "https://www.formula1.com/en/results.html/2023/drivers.html";
         private static readonly string CONSTRUCTOR_STANDINGS_URL = "https://www.formula1.com/en/results.html/2023/team.html";
 
         // mapping between output file and scraping function
-        private static readonly Dictionary<string, Func<MultiData.Data>> Scrapers = new()
+        internal static readonly Dictionary<string, Func<MultiData.Data>> Scrapers = new()
         {
             ["RaceSchedule"] = ScrapeRaceSchedule,
             ["SeasonSchedule"] = ScrapeSeasonSchedule,
@@ -28,7 +28,8 @@ namespace F1_Aggregator
 
         private static MultiData? F1Data;
 
-        internal WebScraper()
+        // load/scrape data
+        internal static void Initialize()
         {
             F1Data = FetchData();
             if (F1Data == null || F1Data.Expiration < DateTime.Now)
@@ -37,12 +38,12 @@ namespace F1_Aggregator
                 foreach (var (key, scraper) in Scrapers)
                     F1Data.DataCollection.Add(key, scraper());
                 File.WriteAllText(DATA_FILE, JsonSerializer.Serialize(F1Data, new JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine("done!");
             }
         }
 
-
         // get saved data from a file
-        private static MultiData? FetchData()
+        internal static MultiData? FetchData()
         {
             if (File.Exists(DATA_FILE))
                 return JsonSerializer.Deserialize<MultiData>(File.ReadAllText(DATA_FILE))!;
@@ -52,7 +53,7 @@ namespace F1_Aggregator
         // get the five-event schedule for a single race weekend
         private static MultiData.Data ScrapeRaceSchedule()
         {
-            Console.WriteLine("Downloading data...");
+            Console.Write("Downloading data... ");
             MultiData.Data data = new() { Output = "Grand Prix" };
             int eventNameIndex = 0;
             int maxEventLength = "Event".Length;
@@ -129,7 +130,7 @@ namespace F1_Aggregator
         }
 
         // get driver point totals so far
-        internal static MultiData.Data ScrapeDriverStandings()
+        public static MultiData.Data ScrapeDriverStandings()
         {
             MultiData.Data data = new();
             int maxDriverLength = "Driver".Length, maxConstructorLength = "Constructor".Length;
@@ -189,34 +190,9 @@ namespace F1_Aggregator
         #endregion DataFetching
         #region DataPresenting
 
-        internal void PrintRaceSchedule()
+        internal static string GetData(string key)
         {
-            PrintData("RaceSchedule");
-        }
-
-        internal void PrintSeasonSchedule()
-        {
-            PrintData("SeasonSchedule");
-        }
-
-        internal void PrintRaceResults()
-        {
-            PrintData("RaceResults");
-        }
-
-        internal void PrintDriverStandings()
-        {
-            PrintData("DriverStandings");
-        }
-
-        internal void PrintConstructorStandings()
-        {
-            PrintData("ConstructorStandings");
-        }
-
-        private void PrintData(string key)
-        {
-            Console.WriteLine($"{F1Data!.DataCollection[key].Output}");
+            return F1Data!.DataCollection[key].Output;
         }
 
         private static string BuildTable(MultiData.Data data)
@@ -240,7 +216,6 @@ namespace F1_Aggregator
         }
 
         #endregion DataPresenting
-
         #region DataCleaning
 
         // remove all of the extra whitespace within a collection of nodes
